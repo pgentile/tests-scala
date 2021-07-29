@@ -4,7 +4,7 @@ version := "0.1"
 scalaVersion := "2.13.6"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.3"
-libraryDependencies += "org.typelevel" %% "cats-effect" % "3.1.1"
+libraryDependencies += "org.typelevel" %% "cats-effect" % "3.2.0"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
 
 val slf4jVersion = "1.7.32"

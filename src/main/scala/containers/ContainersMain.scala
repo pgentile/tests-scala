@@ -12,7 +12,7 @@ object ContainersMain {
   }
 
   def makeSound(container: Container[Animal]): Unit = {
-    container.apply(_.makeNoise())
+    container(_.makeNoise())
   }
 
 }

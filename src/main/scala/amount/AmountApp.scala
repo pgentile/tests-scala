@@ -1,8 +1,6 @@
 package org.example.testsscala
 package amount
 
-import scala.math.BigDecimal
-
 object AmountApp extends App {
 
   import Helpers._
@@ -31,6 +29,7 @@ object AmountApp extends App {
     case Amount(value, EUR) if value == 0 => println("Zero €")
     case Amount(value, USD) if value == 0 => println("Zero $")
     case Amount(value, EUR) => println(s"$value €")
+    case Amount(value, currency) => println(s"$value ${currency.symbol}")
   }
 
 }
