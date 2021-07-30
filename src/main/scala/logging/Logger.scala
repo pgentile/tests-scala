@@ -5,62 +5,93 @@ import org.slf4j.{LoggerFactory => Slf4jLoggerFactory}
 
 import scala.reflect.ClassTag
 
-class Logger(clazz: Class[_]) {
+class Logger private(name: String) {
 
-  private val wrapped = Slf4jLoggerFactory.getLogger(clazz)
+  private val wrapped = Slf4jLoggerFactory.getLogger(name)
 
-  def debug(message: => String): Unit = {
+  def trace(message: => Message): Unit = {
+    if (wrapped.isTraceEnabled) {
+      val (format, args) = extractFromMessage(message)
+      wrapped.trace(format, args: _*)
+    }
+  }
+
+  def trace(message: => Message, e: Throwable): Unit = {
+    if (wrapped.isTraceEnabled) {
+      val (format, args) = extractFromMessage(message)
+      wrapped.trace(format, args :+ e: _*)
+    }
+  }
+
+  def debug(message: => Message): Unit = {
     if (wrapped.isDebugEnabled) {
-      wrapped.debug(message)
+      val (format, args) = extractFromMessage(message)
+      wrapped.debug(format, args: _*)
     }
   }
 
-  def debug(message: => String, e: Throwable): Unit = {
+  def debug(message: => Message, e: Throwable): Unit = {
     if (wrapped.isDebugEnabled) {
-      wrapped.debug(message, e)
+      val (format, args) = extractFromMessage(message)
+      wrapped.debug(format, args :+ e: _*)
     }
   }
 
-  def info(message: => String): Unit = {
+  def info(message: => Message): Unit = {
     if (wrapped.isInfoEnabled) {
-      wrapped.info(message)
+      val (format, args) = extractFromMessage(message)
+      wrapped.info(format, args: _*)
     }
   }
 
-  def info(message: => String, e: Throwable): Unit = {
+  def info(message: => Message, e: Throwable): Unit = {
     if (wrapped.isInfoEnabled) {
-      wrapped.info(message, e)
+      val (format, args) = extractFromMessage(message)
+      wrapped.info(format, args :+ e: _*)
     }
   }
 
-  def warn(message: => String): Unit = {
+  def warn(message: => Message): Unit = {
     if (wrapped.isWarnEnabled) {
-      wrapped.warn(message)
+      val (format, args) = extractFromMessage(message)
+      wrapped.warn(format, args: _*)
     }
   }
 
-  def warn(message: => String, e: Throwable): Unit = {
+  def warn(message: => Message, e: Throwable): Unit = {
     if (wrapped.isWarnEnabled) {
-      wrapped.warn(message, e)
+      val (format, args) = extractFromMessage(message)
+      wrapped.warn(format, args :+ e: _*)
     }
   }
 
-  def error(message: => String): Unit = {
+  def error(message: => Message): Unit = {
     if (wrapped.isErrorEnabled) {
-      wrapped.error(message)
+      val (format, args) = extractFromMessage(message)
+      wrapped.error(format, args: _*)
     }
   }
 
-  def error(message: => String, e: Throwable): Unit = {
+  def error(message: => Message, e: Throwable): Unit = {
     if (wrapped.isErrorEnabled) {
-      wrapped.error(message, e)
+      val (format, args) = extractFromMessage(message)
+      wrapped.error(format, args :+ e: _*)
     }
+  }
+
+  private def extractFromMessage(messageFactory: => Message): (String, Seq[Any]) = {
+    val message = messageFactory
+    (message.format, message.args)
   }
 
 }
 
 object Logger {
 
-  def apply[T](implicit classTag: ClassTag[T]): Logger = new Logger(classTag.runtimeClass)
+  def apply[T](name: String): Logger = new Logger(name)
+
+  def apply(clazz: Class[_]): Logger = Logger(clazz.getName)
+
+  def apply[T](implicit classTag: ClassTag[T]): Logger = Logger(classTag.runtimeClass)
 
 }
