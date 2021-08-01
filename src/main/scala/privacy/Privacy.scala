@@ -1,17 +1,19 @@
 package org.example.testsscala
 package privacy
 
-final class Privacy[+A](private val value: A) {
+final class Privacy[+A] private(private val value: A, private[this] val reprAnonymizer: Anonymizer[A, String]) {
 
-  def map[B](f: A => B): Privacy[B] = new Privacy[B](f(value))
+  def untaint: A = value
+
+  def map[B](f: A => B): Privacy[B] = Privacy[B](f(value))
 
   def flatMap[B](f: A => Privacy[B]): Privacy[B] = f(value)
 
   def matches(p: A => Boolean): Boolean = p(value)
 
-  def anonymize[B](f: A => B): B = f(value)
+  def anonymize[B](anonymizer: Anonymizer[A, B]): B = anonymizer(value)
 
-  def untaint: A = value
+  def withReprAnonymizer(anonymizer: Anonymizer[A, String]): Privacy[A] = Privacy(value, anonymizer)
 
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -22,10 +24,12 @@ final class Privacy[+A](private val value: A) {
 
   override def hashCode(): Int = value.hashCode()
 
+  override def toString: String = anonymize(reprAnonymizer)
+
 }
 
 object Privacy {
 
-  def apply[A](v: A) = new Privacy[A](v)
+  def apply[A](v: A, anonymizer: Anonymizer[A, String] = DefaultAnonymizer) = new Privacy[A](v, anonymizer)
 
 }

@@ -1,4 +1,4 @@
 package org.example.testsscala
-package order
+package order.order
 
 final case class OrderReference(value: String) extends AnyVal
