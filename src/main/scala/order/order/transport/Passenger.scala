@@ -7,7 +7,7 @@ import privacy.Privacy
 import java.time.LocalDate
 
 case class Passenger(
-  id: PassengerId,
+  id: PassengerId = PassengerId(),
   name: Option[Privacy[FullName]] = None,
   birthDate: Option[LocalDate] = None,
   email: Option[Privacy[Email]] = None,

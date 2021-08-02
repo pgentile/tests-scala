@@ -15,6 +15,8 @@ final class Privacy[+A] private(private val value: A, private[this] val reprAnon
 
   def withReprAnonymizer(anonymizer: Anonymizer[A, String]): Privacy[A] = Privacy(value, anonymizer)
 
+  def anonymizedByString(replacement: String): Privacy[A] = Privacy(value, new ReplacementAnonymizer(replacement))
+
   override def equals(obj: Any): Boolean = {
     obj match {
       case other: Privacy[_] => value == other.value

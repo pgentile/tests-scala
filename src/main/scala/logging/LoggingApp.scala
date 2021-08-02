@@ -9,6 +9,7 @@ object LoggingApp extends App {
 
   val name = "Pierre"
   val surname = "Gentile"
+  logger.debug(m"Debug, Bonjour, $name $surname")
   logger.info(m"Bonjour, $name $surname")
   logger.info(m"Bonjour, toi, inconnu n° ${Math.abs(ThreadLocalRandom.current.nextInt())}")
   logger.error(m"J'ai planté...", new RuntimeException("Oh, no :("))
