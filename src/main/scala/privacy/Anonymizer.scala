@@ -1,11 +1,7 @@
 package org.example.testsscala
 package privacy
 
-trait Anonymizer[-A, +B] {
-
-  def apply(value: A): B
-
-}
+trait Anonymizer[-A, +B] extends (A => B)
 
 class ReplacementAnonymizer(replacement: String) extends Anonymizer[Any, String] {
 
