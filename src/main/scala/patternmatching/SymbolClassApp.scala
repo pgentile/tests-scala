@@ -1,19 +1,15 @@
 package org.example.testsscala
 package patternmatching
 
-import patternmatching.SymbolClassApp.<===>
-
 object SymbolClassApp extends App {
 
-  class <===>(val left: Int, val right: Int) {
-
-  }
+  class <===>(val left: Int, val right: Int)
 
   object <===> {
 
     def apply(left: Int, right: Int) = new <===>(left, right)
 
-    def unapply(instance: <===>): Option[(Int, Int)] = Some((instance.left, instance.right))
+    def unapply(instance: <===>): Option[(Int, Int)] = Some(instance.left -> instance.right)
 
   }
 

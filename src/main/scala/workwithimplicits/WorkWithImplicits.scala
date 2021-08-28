@@ -26,6 +26,17 @@ object WorkWithImplicits {
 
       callMe(requestContext)
     }
+
+    {
+      import Helpers._
+
+      implicit val commandable: Commandable = new Commandable {
+        override def run(): Unit = println("Run the command")
+      }
+
+      val l = Seq("A", "B", "C")
+      l.runCommands
+    }
   }
 
 }

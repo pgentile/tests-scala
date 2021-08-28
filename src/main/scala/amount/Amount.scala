@@ -35,4 +35,6 @@ final case class Amount(value: BigDecimal, currency: Currency) {
 
    def unapply(amount: Amount): Option[(BigDecimal, Currency)] = Some((amount.value, amount.currency))
 
+   val orderingByValue: Ordering[Amount] = Ordering.by(_.value)
+
 }
