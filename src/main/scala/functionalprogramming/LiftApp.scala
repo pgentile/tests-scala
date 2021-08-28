@@ -5,7 +5,7 @@ object LiftApp extends App {
 
   type Pair[A] = (A, A)
 
-  def lift[A, B](f: A => B): Pair[A] => Pair[B] = (pa: Pair[A]) => new Pair(f(pa._1), f(pa._2))
+  def lift[A, B](f: A => B): Pair[A] => Pair[B] = (pa: Pair[A]) => f(pa._1) -> f(pa._2)
 
   def liftSeq[A, B](f: A => B): Seq[A] => Seq[B] = (seq: Seq[A]) => seq.map(f)
 
