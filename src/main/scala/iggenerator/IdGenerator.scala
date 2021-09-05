@@ -39,6 +39,7 @@ private object IdGenerator {
 
   private[this] val instanceCounter = new AtomicInteger()
 
+  @inline
   private def nextInstanceCounter: Int = instanceCounter.incrementAndGet()
 
 }
