@@ -30,6 +30,7 @@ object AmountApp extends App {
     case Amount(value, USD) if value == 0 => println("Zero $")
     case Amount(value, EUR) => println(s"$value €")
     case Amount(value, currency) => println(s"$value ${currency.symbol}")
+    case _ => println("Other")
   }
 
 }
