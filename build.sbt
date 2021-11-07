@@ -18,6 +18,8 @@ libraryDependencies += "io.github.embeddedkafka" %% "embedded-kafka" % "2.8.0" %
 libraryDependencies += "org.slf4j" % "slf4j-api" % slf4jVersion
 libraryDependencies += "org.slf4j" % "slf4j-simple" % slf4jVersion
 
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2"
+
 idePackagePrefix := Some("org.example.testsscala")
 
 enablePlugins(JavaAppPackaging)
