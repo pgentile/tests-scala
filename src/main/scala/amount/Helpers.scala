@@ -9,9 +9,13 @@ object Helpers {
 
     def euro: Amount = euros
 
+    def `€`: Amount = euros
+
     def dollars: Amount = Amount(value, USD)
 
     def dollar: Amount = dollars
+
+    def $: Amount = dollars
 
   }
 

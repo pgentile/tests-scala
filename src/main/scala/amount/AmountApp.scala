@@ -14,7 +14,8 @@ object AmountApp extends App {
     0.euros,
     15.euros,
     -12.euros,
-    18.6.euros
+    18.6.euros,
+    150.`€`
   )
 
   println(s"a1 + a2 = ${a1 + a2}")
