@@ -15,7 +15,7 @@ class IdGenerator(queueSize: Int = 200) extends AutoCloseable {
         queue.put(generateId)
       }
     } catch {
-      case _: InterruptedException => ()
+      case _: InterruptedException => Thread.currentThread.interrupt()
     }
   )
 
