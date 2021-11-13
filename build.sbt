@@ -11,6 +11,7 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" 
 libraryDependencies += "org.typelevel" %% "cats-core" % catsVersion
 libraryDependencies += "org.typelevel" %% "cats-effect" % catsVersion
 libraryDependencies += "org.apache.kafka" % "kafka-clients" % "2.8.0"
+libraryDependencies += "com.beachape" %% "enumeratum" % "1.7.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.9" % Test
 libraryDependencies += "io.github.embeddedkafka" %% "embedded-kafka" % "2.8.0" % Test
