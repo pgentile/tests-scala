@@ -6,6 +6,7 @@ scalaVersion := "2.13.6"
 
 val catsVersion = "2.3.0"
 val slf4jVersion = "1.7.32"
+val akkaVersion = "2.6.17"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.3"
 libraryDependencies += "org.typelevel" %% "cats-core" % catsVersion
@@ -20,6 +21,9 @@ libraryDependencies += "org.slf4j" % "slf4j-api" % slf4jVersion
 libraryDependencies += "org.slf4j" % "slf4j-simple" % slf4jVersion
 
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2"
+
+libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
+libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test
 
 idePackagePrefix := Some("org.example.testsscala")
 
