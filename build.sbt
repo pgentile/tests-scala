@@ -2,7 +2,7 @@ organization := "org.example"
 name := "tests-scala"
 version := "0.1"
 
-scalaVersion := "2.13.6"
+scalaVersion := "2.13.7"
 
 val slf4jVersion = "1.7.32"
 val akkaVersion = "2.6.17"
