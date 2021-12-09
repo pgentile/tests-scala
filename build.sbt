@@ -25,6 +25,14 @@ libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2"
 libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test
 
-idePackagePrefix := Some("org.example.testsscala")
+libraryDependencies += "io.grpc" % "grpc-netty" % scalapb.compiler.Version.grpcJavaVersion
+libraryDependencies += "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion
+libraryDependencies += "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.0"
+
+idePackagePrefix.withRank(KeyRanks.Invisible) := Some("org.example.testsscala")
 
 enablePlugins(JavaAppPackaging)
+
+Compile / PB.targets := Seq(
+  scalapb.gen(flatPackage = true) -> (Compile / sourceManaged).value / "scalapb"
+)
