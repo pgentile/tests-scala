@@ -72,7 +72,7 @@ object ExampleClientApp {
     def decrement(): Unit = {
       lock.synchronized {
         count -= 1
-        lock.notify()
+        lock.notifyAll()
       }
     }
 
