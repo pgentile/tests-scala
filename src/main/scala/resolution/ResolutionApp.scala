@@ -1,17 +1,22 @@
 package org.example.testsscala
 package resolution
 
-import cats.syntax._
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 
-object ResolutionApp {
+object ResolutionApp extends IOApp {
 
-  def main(args: Array[String]): Unit = {
-    val resolutionFactory = Resolution.init[Id, Toto](toto => Set(toto.id)) _
-    val result = resolutionFactory(Set(Id("A"), Id("B"), Id("C"))).resolveAll[Option] { id =>
-      Some(Toto(id))
-    }
-    result.foreach(println)
+  override def run(args: List[String]): IO[ExitCode] = {
+    val resolution = new Resolution[Id, Toto](toto => Set(toto.id))
+
+    val refs = Set(Id("A"), Id("B"), Id("C"))
+
+    for {
+      items <- resolution.resolve(refs) { id =>
+        IO.pure(Toto(id))
+      }
+      _ <- IO.println(s"Items are: $items")
+    } yield ExitCode.Success
   }
 
   case class Id(value: String)

@@ -1,53 +1,35 @@
 package org.example.testsscala
 package resolution
 
-import cats.{Applicative, Monad}
 import cats.implicits._
+import cats.{Applicative, Monad}
 
-final class Resolution[R, T] private(private val refExtractor: T => Set[R], private val unresolved: Set[R], private val resolved: Map[R, T]) {
+class Resolution[R, T](refExtractor: T => Set[R]) {
 
-  def allResolved: Boolean = unresolved.isEmpty
+  private val refResolutionFactory = RefResolution.init(refExtractor) _
 
-  def addResolved(item: T): Resolution[R, T] = {
-    val extractedRefs = refExtractor(item)
-    new Resolution(
-      refExtractor,
-      unresolved.diff(extractedRefs),
-      resolved ++ extractedRefs.map(_ -> item)
-    )
+  def resolve[F[_]](refs: Set[R])(getItem: R => F[T])(implicit F: Monad[F]): F[Seq[T]] = {
+    val refResolution = refResolutionFactory(refs)
+    resolveMany(refResolution, getItem).map(_.getResolved)
   }
 
-  def resolveOne[F[_]](getItem: R => F[T])(implicit F: Applicative[F]): F[Resolution[R, T]] = {
-    unresolved.headOption
+  private def resolveMany[F[_]](refResolution: RefResolution[R, T], getItem: R => F[T])(implicit F: Monad[F]): F[RefResolution[R, T]] = {
+    resolveOne(refResolution, getItem).flatMap { newRefResolution =>
+      if (newRefResolution.allResolved) {
+        F.pure(newRefResolution)
+      } else {
+        resolveMany(newRefResolution, getItem)
+      }
+    }
+  }
+
+  private def resolveOne[F[_]](refResolution: RefResolution[R, T], getItem: R => F[T])(implicit F: Applicative[F]): F[RefResolution[R, T]] = {
+    refResolution.unresolvedRef
       .map { ref =>
-        val item = getItem(ref)
-        F.map(item)(addResolved)
+        val fItem = getItem(ref)
+        fItem.map(refResolution.resolve)
       }
-      .getOrElse(F.pure(this))
+      .getOrElse(F.pure(refResolution))
   }
-
-  def resolveAll[F[_]](getItem: R => F[T])(implicit F: Monad[F]): F[Resolution[R, T]] = {
-    resolveOne(getItem).flatMap { resolution =>
-      if (resolution.allResolved) {
-        F.pure(resolution)
-      } else {
-        resolution.resolveOne(getItem)
-      }
-    }
-
-    F.flatMap(resolveOne(getItem)) { resolution =>
-      if (resolution.allResolved) {
-        F.pure(resolution)
-      } else {
-        resolution.resolveOne(getItem)
-      }
-    }
-  }
-
-}
-
-object Resolution {
-
-  def init[R, T](refExtractor: T => Set[R])(unresolved: Set[R]): Resolution[R, T] = new Resolution(refExtractor, unresolved, Map.empty)
 
 }
