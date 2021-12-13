@@ -1,21 +1,24 @@
 package org.example.testsscala
-package adventofcode.day1
+package adventofcode.day1part2
 
 import scala.io.Source
 import scala.util.Using
 
 
-object Day1App {
+object Day1Part2App {
 
   def main(args: Array[String]): Unit = {
-    val resource = classOf[Day1App.type].getResource("input.txt")
+    val resource = classOf[Day1Part2App.type].getResource("input.txt")
     Using(Source.fromURL(resource)) { source =>
       val lines = source.getLines
         .filter(_.nonEmpty)
         .map(_.toInt)
         .toSeq
 
-      val count = lines
+      val incrementCount = lines
+        .sliding(3)
+        .map(_.sum)
+        .toSeq
         .sliding(2)
         .map {
           case before :: after :: Nil =>
@@ -24,9 +27,11 @@ object Day1App {
             } else {
               0
             }
-        }.sum
+        }
+        .sum
 
-      println(s"Count = $count")
+      println(incrementCount)
+
     }.get
   }
 
