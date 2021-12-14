@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      # AMQP port
+      - "5672:5672"
+      # Management port
+      - "15672:15672"

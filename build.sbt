@@ -26,6 +26,9 @@ libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2"
 libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % "2.6.17"
 libraryDependencies += "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.17" % Test
 
+libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-amqp" % "3.0.4"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream" % "2.6.17"
+
 libraryDependencies += "io.grpc" % "grpc-netty" % scalapb.compiler.Version.grpcJavaVersion
 libraryDependencies += "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion
 libraryDependencies += "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.0"
