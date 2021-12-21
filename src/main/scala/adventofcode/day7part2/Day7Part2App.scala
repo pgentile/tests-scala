@@ -1,10 +1,10 @@
 package org.example.testsscala
-package adventofcode.day7
+package adventofcode.day7part2
 
 import scala.io.Source
 import scala.util.Using
 
-object Day7App {
+object Day7Part2App {
 
   def main(args: Array[String]): Unit = {
     val crabPositions = readCrabPositions()
@@ -24,8 +24,18 @@ object Day7App {
   }
 
   private def fuelSpentForPosition(positions: Seq[Int], testPosition: Int) = {
-    positions.map(pos => Math.abs(pos - testPosition)).sum
+    positions.map(pos => fuelSpentForMove(Math.abs(pos - testPosition))).sum
   }
+
+  /**
+   * U(0) = 0
+   * U(n+1) = U(n) + 1
+   *
+   * Sum(U(n)) = 0 + 1 + 2 + ... + (n - 2) + (n - 1) + n
+   *
+   * See https://fr.wikipedia.org/wiki/Suite_arithm%C3%A9tique#Somme_des_termes
+   */
+  private def fuelSpentForMove(move: Int): Int = (move * (move + 1)) / 2
 
   private def readCrabPositions(): Seq[Int] = {
     readInputLines(_.next()).split(',').map(_.toInt)
