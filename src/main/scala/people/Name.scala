@@ -11,6 +11,9 @@ case class Name(firstName: String, lastName: String) extends Ordered[Name] {
 
 object Name {
 
-  private val ordering = Ordering.by[Name, String](_.lastName).thenComparing(_.firstName)
+  val orderingByLastName: Ordering[Name] = Ordering.by(_.lastName)
+  val orderingByFirstName: Ordering[Name] = Ordering.by(_.firstName)
+
+  implicit val ordering: Ordering[Name] = orderingByLastName.orElse(orderingByFirstName)
 
 }
