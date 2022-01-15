@@ -3,6 +3,8 @@ package exceptions
 
 import org.scalatest.flatspec.AnyFlatSpec
 
+import scala.util.control.NonFatal
+
 class TryCatchSpec extends AnyFlatSpec{
 
   it should "rethrow unmatched exceptions" in {
@@ -20,6 +22,7 @@ class TryCatchSpec extends AnyFlatSpec{
     try {
       throw new IllegalStateException
     } catch {
+      case NonFatal(_) => println("Non fatal caught")
       case _ => println("Catched")
     }
     succeed
