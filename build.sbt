@@ -36,6 +36,8 @@ libraryDependencies += "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.0"
 libraryDependencies += "io.circe" %% "circe-parser" % "0.14.1"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.14.1"
 
+libraryDependencies += "com.vladkopanev" %% "cats-saga" % "1.0.0-RC2"
+
 idePackagePrefix.withRank(KeyRanks.Invisible) := Some("org.example.testsscala")
 
 enablePlugins(JavaAppPackaging)
