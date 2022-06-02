@@ -1,13 +1,35 @@
 package org.example.testsscala
 package saga
 
-import cats.data.EitherT
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.IO
 
-import scala.util.Random
+sealed trait SagaExecutionResult[+A] {
+
+  def fold[B](onSuccess: (A, IO[Unit]) => B, onFailure: (Throwable, IO[Unit]) => B): B
+
+}
+
+object SagaExecutionResult {
+
+  case class Success[+A](value: A, rollback: IO[Unit]) extends SagaExecutionResult[A] {
+
+    override def fold[B](onSuccess: (A, IO[Unit]) => B, onFailure: (Throwable, IO[Unit]) => B): B = onSuccess(value, rollback)
+
+  }
+
+  case class Failure[+A](exception: Throwable, rollback: IO[Unit]) extends SagaExecutionResult[A] {
+
+    override def fold[B](onSuccess: (A, IO[Unit]) => B, onFailure: (Throwable, IO[Unit]) => B): B = onFailure(exception, rollback)
+
+  }
+
+}
+
 
 sealed trait SagaFailure
+
 case object SagaRolledBack extends SagaFailure
+
 case object SagaPartiallyRolledBack extends SagaFailure
 
 trait Saga[A] {
@@ -18,7 +40,7 @@ trait Saga[A] {
 
   def flatMap[B](f: A => Saga[B]): Saga[B] = FlatMap(this, f)
 
-  def execute(): IO[Either[SagaFailure, A]]
+  def execute(): IO[SagaExecutionResult[A]]
 
 }
 
@@ -28,105 +50,76 @@ object Saga {
 
   def unit: Saga[Unit] = pure(())
 
-  def sideEffect[A](io: IO[A]): SideEffect[A] = SideEffect(io)
+  def sideEffect[A](io: IO[A], rollbackOnSuccess: A => IO[Unit]): SideEffect[A] =
+    SideEffect(io, Some(rollbackOnSuccess), None)
+
+  def sideEffect[A](io: IO[A], rollbackOnSuccess: A => IO[Unit], rollbackOnFailure: IO[Unit]): SideEffect[A] =
+    SideEffect(io, Some(rollbackOnSuccess), Some(rollbackOnFailure))
+
+  def sideEffect[A](io: IO[A], rollback: IO[Unit]): SideEffect[A] = sideEffect(io, _ => rollback, rollback)
 
   def noSideEffect[A](io: IO[A]): NoSideEffect[A] = NoSideEffect(io)
 
-  def rollbackable[A](io: IO[A], rollback: IO[Unit]): RollbackableSideEffect[A] = RollbackableSideEffect(io, rollback)
-
   case class Pure[A](value: A) extends Saga[A] {
 
-    override def execute(): IO[Either[SagaFailure, A]] = IO.pure(Right(value))
+    import SagaExecutionResult._
+
+    override def execute(): IO[SagaExecutionResult[A]] =
+      IO.pure(Success(value, IO.unit))
 
   }
 
   case class FlatMap[A, B](input: Saga[A], f: A => Saga[B]) extends Saga[B] {
 
-    override def execute(): IO[Either[SagaFailure, B]] = {
-      val either: EitherT[IO, SagaFailure, B] = for {
-        inputValue <- EitherT(input.execute())
-        outputValue <- EitherT(f(inputValue).execute())
-      } yield outputValue
+    import SagaExecutionResult._
 
-      either.value
+    override def execute(): IO[SagaExecutionResult[B]] = {
+      for {
+        result1 <- input.execute()
+        result2 <- result1.fold(
+          (value1, rollback1) => f(value1).execute().map { result2 =>
+            result2.fold(
+              (value2, rollback2) => Success(value2, rollback2 *> rollback1),
+              (exception, rollback2) => Failure(exception, rollback2 *> rollback1)
+            )
+          },
+          (exception, rollback) => IO.pure(Failure[B](exception, rollback))
+        )
+      } yield result2
     }
 
   }
 
-  case class SideEffect[A](io: IO[A]) extends Saga[A] {
+  case class SideEffect[A](io: IO[A], rollbackOnSuccess: Option[A => IO[Unit]], rollbackOnFailure: Option[IO[Unit]]) extends Saga[A] {
 
-    override def execute(): IO[Either[SagaFailure, A]] = {
+    import SagaExecutionResult._
+
+    override def execute(): IO[SagaExecutionResult[A]] = {
       io
-        .map(Right(_))
-        .handleErrorWith { _ => IO(Left(SagaPartiallyRolledBack)) }
+        .map { output =>
+          val rollback: IO[Unit] = rollbackOnSuccess
+            .map { fr => fr(output) }
+            .getOrElse(IO.unit)
+
+          Success(output, rollback)
+        }
+        .handleError { e =>
+          val rollback: IO[Unit] = rollbackOnFailure.getOrElse(IO.unit)
+
+          Failure(e, rollback)
+        }
     }
 
   }
 
   case class NoSideEffect[A](io: IO[A]) extends Saga[A] {
 
-    override def execute(): IO[Either[SagaFailure, A]] = {
+    override def execute(): IO[SagaExecutionResult[A]] = {
       io
-        .map(Right(_))
-        .handleErrorWith { _ => IO(Left(SagaRolledBack)) }
+        .map { output => SagaExecutionResult.Success(output, IO.unit) }
+        .handleError { e => SagaExecutionResult.Failure(e, IO.unit) }
     }
 
-  }
-
-  case class RollbackableSideEffect[A](io: IO[A], compensation: IO[Unit]) extends Saga[A] {
-
-    override def execute(): IO[Either[SagaFailure, A]] = {
-      io
-        .map(Right(_))
-        .handleErrorWith { _ =>
-          compensation
-            .as(Left(SagaRolledBack))
-            .handleError { _ => Left(SagaPartiallyRolledBack) }
-        }
-    }
-
-  }
-
-}
-
-object SagaApp extends IOApp {
-
-  override def run(args: List[String]): IO[ExitCode] = {
-    val saga = for {
-      _ <- Saga.rollbackable(
-        IO.println("OK 1"),
-        IO.println("Rollback 1")
-      )
-      _ <- Saga.rollbackable(
-        IO.println("OK 2"),
-        IO.println("Rollback 2")
-      )
-      _ <- Saga.rollbackable(
-        IO.println("OK 3"),
-        IO.println("Rollback 3")
-      )
-      fail <- Saga.noSideEffect(IO(Random.nextBoolean() || true))
-      _ <- Saga.rollbackable(
-        IO.unit.flatMap { _ =>
-          if (fail) {
-            IO.raiseError(new IllegalStateException("It must fail"))
-          } else {
-            IO.println("OK 4")
-          }
-        },
-        IO.println("Rollback 4")
-      )
-      _ <- Saga.rollbackable(
-        IO.println("OK 5"),
-        IO.println("Rollback 5")
-      )
-    } yield ()
-
-    saga.execute()
-      .flatMap { result =>
-        IO.println(s"Result = $result")
-      }
-      .map(_ => ExitCode.Success)
   }
 
 }
