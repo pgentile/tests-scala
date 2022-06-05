@@ -11,17 +11,22 @@ import scala.util.Random
 
 object CatsSagaApp extends IOApp {
 
-  implicit val sagaTransactor: SagaTransactor[IO] = new SagaDefaultTransactor
+  private type SagaIO[A] = Saga[IO, A]
+
+  private implicit val sagaTransactor: SagaTransactor[IO] = new SagaDefaultTransactor
 
   override def run(args: List[String]): IO[ExitCode] = {
 
-    val saga: Saga[IO, Unit] = for {
+    val saga: SagaIO[Unit] = for {
       conversationId <- createConversation.compensateIfSuccess(deleteConversation)
+
       _ <- joinConversation(conversationId).compensate(releaseConversation(conversationId))
+
       monitorConversation <- randomDouble.map(_ < 0.8).noCompensate
-      _ <- when(monitorConversation) {
-        addMonitor(conversationId).compensateIfSuccess(cancelMonitor).map(_ => ())
+      _ <- Applicative[SagaIO].whenA(monitorConversation) {
+        addMonitor(conversationId).compensateIfSuccess(cancelMonitor)
       }
+
       transactionId <- newRandomID("tx").noCompensate
       _ <- registerTransaction(transactionId, conversationId).compensate(removeTransaction(transactionId))
     } yield ()
@@ -56,8 +61,7 @@ object CatsSagaApp extends IOApp {
   private def newRandomID(prefix: String): IO[String] =
     IO(prefix + "_" + UUID.randomUUID().toString.replaceAll("-", ""))
 
-  private def randomDouble: IO[Double] =
-    IO(Random.nextDouble())
+  private val randomDouble: IO[Double] = IO(Random.nextDouble())
 
   private def randomFault(name: String, probability: Double): IO[Unit] =
     randomDouble.flatMap { result =>
@@ -66,13 +70,6 @@ object CatsSagaApp extends IOApp {
       } else {
         IO.unit
       }
-    }
-
-  private def when[F[_]](condition: Boolean)(f: => Saga[F, Unit])(implicit applicative: Applicative[F]): Saga[F, Unit] =
-    if (condition) {
-      f.map(Some(_))
-    } else {
-      applicative.unit.noCompensate
     }
 
 }
