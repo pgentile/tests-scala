@@ -7,3 +7,5 @@ services:
       - "5672:5672"
       # Management port
       - "15672:15672"
+      # Prometheus port
+      - "15692:15692"
