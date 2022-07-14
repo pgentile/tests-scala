@@ -38,6 +38,9 @@ libraryDependencies += "io.circe" %% "circe-generic" % "0.14.1"
 
 libraryDependencies += "com.vladkopanev" %% "cats-saga" % "1.0.0-RC2"
 
+libraryDependencies += "io.kamon" %% "kamon-bundle" % "2.5.5"
+libraryDependencies += "io.kamon" % "kanela-agent" % "1.0.14" % "provided"
+
 idePackagePrefix.withRank(KeyRanks.Invisible) := Some("org.example.testsscala")
 
 enablePlugins(JavaAppPackaging)
