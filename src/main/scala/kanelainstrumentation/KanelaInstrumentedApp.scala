@@ -1,10 +1,10 @@
 package org.example.testsscala
 package kanelainstrumentation
 
-import cats.effect.{IO, IOLocal}
-import cats.effect.unsafe.{FiberMonitor, IORuntime, IORuntimeConfig}
+import cats.effect.{IO, IOLocal, Resource, ResourceIO}
+import cats.effect.implicits._
 import kamon.Kamon
-import kamon.context.Context
+import kamon.context.{Context, Storage}
 
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -81,22 +81,42 @@ object KanelaInstrumentedApp {
 
     val context = Kamon.currentContext()
     val io = for {
-      ctx <- IOLocal(context)
-      requestId <- IOLocal(s"R-${UUID.randomUUID()}")
+      requestId <- IOLocal(s"aaa")
       logState = logCurrentState(_, requestId)
-      f1 <- logState("F8.0").start
-      _ <- IO.blocking(Thread.sleep(10))
-      _ <- logState("F7.1") *> logState("F7.2")
-      f2 <- logState("F8.1").start
-      f3 <- logState("F8.2").start
-      _ <- IO.cede
-      _ <- logState("F9").start
-      _ <- IO.sleep(10.milliseconds)
-      _ <- logState("F10")
-      _ <- logState("F11").start
-      _ <- f1.join
-      _ <- f2.join
-      _ <- f3.join
+      f0 <- logState("F5").start
+      _ <- logState("F6")
+
+      _ <- withContext(context).use { c =>
+        for {
+          _ <- logState("F7")
+          f1 <- logState("F8.0").start
+          _ <- requestId.set("bbb")
+          _ <- IO.blocking(Thread.sleep(10))
+          _ <- logState("F9.1") *> logState("F9.2")
+
+          _ <- withContext(c.withEntry(correlationId, "xxx")).use { _ =>
+            for {
+              _ <- logState("F9.2")
+              f2 <- logState("F10").start
+              f3 <- logState("F11").start
+              //_ <- IO.cede
+              _ <- logState("F12").start
+              _ <- IO.sleep(10.milliseconds)
+              _ <- logState("F13.1") *> logState(s"F13.2 current context is = $context")
+              _ <- logState("F14").start
+              _ <- f0.join
+              _ <- f1.join
+              _ <- f2.join
+              _ <- f3.join
+            } yield ()
+          }
+
+          _ <- logState("F15")
+        } yield ()
+      }
+
+      _ <- logState("F15")
+      _ <- logState("F16")
     } yield ()
 
     io.unsafeRunSync()
@@ -105,9 +125,22 @@ object KanelaInstrumentedApp {
   private def log(s: String): Unit = println(s"[${Thread.currentThread().getName}] $s")
 
   private def logCurrentState(s: String, ioRid: IOLocal[String]): IO[Unit] = {
-    val cid = Kamon.currentContext().get(correlationId)
+    ioRid.get.flatMap { rid =>
+      IO {
+        val context = Kamon.currentContext()
+        val cid = context.get(correlationId)
+        println(s"[${Thread.currentThread().getName}] (CID = $cid, RID = $rid) $s")
+      }
+    }
+  }
 
-    ioRid.get.flatMap(rid => IO(println(s"[${Thread.currentThread().getName}] (CID = $cid, RID = $rid) $s")))
+  private def withContext(currentContext: Context): ResourceIO[Context] = {
+    for {
+      localContext <- Resource.eval(IOLocal(Context.Empty))
+      _ <- Resource.make(localContext.set(currentContext))(_ => localContext.reset)
+      scope <- Resource.make(IO(Kamon.storeContext(currentContext)))(scope => IO(scope.close()))
+      _ <- Resource.eval(IO(println(s"[${Thread.currentThread().getName}] Context set as resource: $currentContext")))
+    } yield scope.context
   }
 
 }

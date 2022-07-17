@@ -1,65 +1,30 @@
 package org.example.testscala.instrumentation.cats;
 
-import cats.effect.IO;
+import cats.effect.IOLocal;
 import kamon.Kamon;
 import kamon.context.Context;
 import kanela.agent.libs.net.bytebuddy.asm.Advice;
-import scala.Function0;
-import scala.jdk.FunctionWrappers;
-
-import java.util.function.Function;
+import org.example.testsscala.instrumentation.CatsUtils;
 
 public class CatsFiberAdvisor {
 
-  @Advice.OnMethodExit
-  public static void beforeFiberConstruction(
+  @Advice.OnMethodEnter
+  public static void beforeFiberRun(
     @Advice.This Object self,
-    @Advice.FieldValue(value = "resumeIO", readOnly = false) Object resumeIO
+    @Advice.FieldValue(value = "localState") scala.collection.immutable.Map<IOLocal<?>, Object> localState
   ) {
-    Context context = Kamon.currentContext();
-    System.out.println("[" + Thread.currentThread().getName() + "] Fiber call with context " + context + " (fiber = " + self + ")");
-    // new RuntimeException().printStackTrace(System.out);
+    Context context = CatsUtils.getKamonContextFromState(localState);
+    Kamon.storeContext(context);
 
-    final var copy = (IO<?>) resumeIO;
-    // resumeIO = copy;
-    // resumeIO = wrapIO(copy);
-
-    resumeIO = IO
-      .apply(new StoreContextF(context))
-      .flatMap(new FunctionWrappers.FromJavaFunction(new RunIO(copy)));
+    // System.out.println("[" + Thread.currentThread().getName() + "] Fiber state (fiber = " + self + ", localState = " + localState + ")");
   }
 
-  public static IO<?> wrapIO(IO<?> io) {
-    return IO.pure("Example");
-  }
-
-  public static class StoreContextF implements Function0<Object> {
-
-    private Context context;
-
-    public StoreContextF(Context context) {
-      this.context = context;
-    }
-
-    @Override
-    public Object apply() {
-      return Kamon.storeContext(context);
-    }
-
-  }
-
-  public static class RunIO implements Function<Object, IO<?>> {
-
-    private IO<?> io;
-
-    public RunIO(IO<?> io) {
-      this.io = io;
-    }
-
-    @Override
-    public IO<?> apply(Object o) {
-      return io;
-    }
+  @Advice.OnMethodExit
+  public static void afterFiberRun(
+    @Advice.This Object self,
+    @Advice.FieldValue(value = "localState") scala.collection.immutable.Map<IOLocal<?>, Object> localState
+  ) {
+    // Kamon.storeContext(Context.Empty());
   }
 
 }
