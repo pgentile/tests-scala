@@ -18,14 +18,7 @@ object KanelaInstrumentedApp {
   def main(args: Array[String]): Unit = {
     Kamon.init()
 
-    Kamon.runWithContext(Context.of(correlationId, "CID-" + UUID.randomUUID().toString)) {
-      // runFuture()
-      // runWithExecutorService()
-      // runWithExecutorServiceRaw()
-      runIO()
-
-      log(s"correlationId       = ${Kamon.currentContext().get(correlationId)}")
-    }
+    runIO()
   }
 
   private def runFuture(): Unit = {
@@ -79,30 +72,30 @@ object KanelaInstrumentedApp {
     // val (scheduler, _) = IORuntime.createDefaultScheduler()
     // implicit val ioRuntime: IORuntime = IORuntime(compute, blocking, scheduler, () => (), IORuntimeConfig())
 
-    val context = Kamon.currentContext()
+    val context = Kamon.currentContext().withEntry(correlationId, "initial")
+    Kamon.storeContext(context)
+
     val io = for {
       requestId <- IOLocal(s"aaa")
       logState = logCurrentState(_, requestId)
       f0 <- logState("F5").start
       _ <- logState("F6")
 
-      _ <- withContext(context).use { c =>
+      _ <- withContext(context.withEntry(correlationId, "aaa")).use { c =>
         for {
           _ <- logState("F7")
           f1 <- logState("F8.0").start
           _ <- requestId.set("bbb")
           _ <- IO.blocking(Thread.sleep(10))
-          _ <- logState("F9.1") *> logState("F9.2")
-
+          _ <- logState("F9.1") *> IO.cede *> logState("F9.2")
           _ <- withContext(c.withEntry(correlationId, "xxx")).use { _ =>
             for {
-              _ <- logState("F9.2")
+              _ <- logState("F9.3")
               f2 <- logState("F10").start
               f3 <- logState("F11").start
-              //_ <- IO.cede
               _ <- logState("F12").start
-              _ <- IO.sleep(10.milliseconds)
-              _ <- logState("F13.1") *> logState(s"F13.2 current context is = $context")
+              _ <- IO.sleep(150.milliseconds)
+              _ <- logState("F13.1") *> logState("F13.2")
               _ <- logState("F14").start
               _ <- f0.join
               _ <- f1.join
@@ -129,15 +122,13 @@ object KanelaInstrumentedApp {
       IO {
         val context = Kamon.currentContext()
         val cid = context.get(correlationId)
-        println(s"[${Thread.currentThread().getName}] (CID = $cid, RID = $rid) $s")
+        println(s"[${Thread.currentThread().getName}] (CID = $cid) $s")
       }
     }
   }
 
   private def withContext(currentContext: Context): ResourceIO[Context] = {
     for {
-      localContext <- Resource.eval(IOLocal(Context.Empty))
-      _ <- Resource.make(localContext.set(currentContext))(_ => localContext.reset)
       scope <- Resource.make(IO(Kamon.storeContext(currentContext)))(scope => IO(scope.close()))
       _ <- Resource.eval(IO(println(s"[${Thread.currentThread().getName}] Context set as resource: $currentContext")))
     } yield scope.context

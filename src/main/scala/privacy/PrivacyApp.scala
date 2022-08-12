@@ -3,6 +3,9 @@ package privacy
 
 import java.time.LocalDate
 
+import cats.syntax.traverse._
+import instances._
+
 object PrivacyApp extends App {
 
   val p1 = Privacy("ABC")
@@ -24,8 +27,11 @@ object PrivacyApp extends App {
   println(birthDate)
 
   val list = Seq("Jean", "Bon", "Guy", "Gnol").map(Privacy(_))
-  println(s"list = ${flattenPrivacy(list)}")
-  println(s"mapped list = ${flattenPrivacy(list).withReprAnonymizer(ListAnonymizer)}")
+  val privacySeq: Privacy[Seq[String]] = list.sequence
+
+  implicit val itemAnonymizer: Anonymizer[String, String] = ReplacementAnonymizer("#####")
+
+  println(s"list = ${privacySeq.anonymize}")
 
   private def toS(obj: AnyRef): String = obj.toString
 

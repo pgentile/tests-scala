@@ -34,11 +34,11 @@ object ShowOrderApp extends App {
     println(order)
   }
 
-  implicit private def toPrivacy(value: FullName): Privacy[FullName] = Privacy(value, "<<<FULL NAME>>>")
+  implicit private def toPrivacy(value: FullName): Privacy[FullName] = Privacy(value)
 
-  implicit private def toPrivacy(value: Email): Privacy[Email] = Privacy(value, "<<<EMAIL>>>")
+  implicit private def toPrivacy(value: Email): Privacy[Email] = Privacy(value)
 
-  implicit private def toPrivacy(value: PhoneNumber): Privacy[PhoneNumber] = Privacy(value, "<<<PHONE NUMBER>>>")
+  implicit private def toPrivacy(value: PhoneNumber): Privacy[PhoneNumber] = Privacy(value)
 
   implicit private def toPrivacy[A](value: A): Privacy[A] = Privacy(value)
 

@@ -1,9 +1,27 @@
 package org.example.testsscala
 package privacy
 
+trait Anonymizer[-A, +B] {
+
+  def apply(value: A): B
+
+}
+
+object Anonymizer {
+
+  def apply[A, B](f: A => B): Anonymizer[A, B] = (value: A) => f(value)
+
+}
+
 class ReplacementAnonymizer(replacement: String) extends Anonymizer[Any, String] {
 
   final override def apply(value: Any): String = replacement
+
+}
+
+object ReplacementAnonymizer {
+
+  def apply(replacement: String): ReplacementAnonymizer = new ReplacementAnonymizer(replacement)
 
 }
 
