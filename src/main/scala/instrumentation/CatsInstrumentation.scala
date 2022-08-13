@@ -14,6 +14,7 @@ class CatsInstrumentation extends InstrumentationBuilder {
     .mixin(classOf[HasContext.Mixin])
     .advise(method("run"), classOf[CatsFiberRunAdvisor])
     .advise(method("scheduleFiber").or(method("rescheduleFiber")), classOf[CatsFiberScheduleAdvisor])
+    .advise(method("scheduleOnForeignEC"), classOf[CatsFiberScheduleOnForeignECAdvisor])
 
 }
 
@@ -62,3 +63,27 @@ object CatsFiberScheduleAdvisor {
 
 }
 
+class CatsFiberScheduleOnForeignECAdvisor
+object CatsFiberScheduleOnForeignECAdvisor {
+
+  @Advice.OnMethodEnter
+  def beforeScheduleCall(@Advice.This fiberWithContext: HasContext, @Advice.Argument(1) fiberWithContextArg: HasContext): Unit = {
+    // val context = fiberWithContext.context
+    // Kamon.storeContext(context)
+    // println(s"[${Thread.currentThread} -- $fiberWithContext -- Schedule] Before")
+    // println(s"Running fiber $fiberWithContext")
+
+    if (fiberWithContext ne fiberWithContextArg) {
+      // println(s"[${Thread.currentThread} -- $fiberWithContext -- Schedule] Before -- Different fibers, coping current Kamon context to the new Fiber")
+      fiberWithContextArg.setContext(Kamon.currentContext())
+    }
+  }
+
+  @Advice.OnMethodExit
+  def afterScheduleCall(@Advice.This fiberWithContext: HasContext, @Advice.Argument(1) fiberWithContextArg: HasContext): Unit = {
+    // val context = Kamon.currentContext()
+    // fiberWithContext.setContext(context)
+    // println(s"[${Thread.currentThread} -- $fiberWithContext -- Schedule] After")
+  }
+
+}
